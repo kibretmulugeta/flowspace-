@@ -1,0 +1,33 @@
+# Render Infrastructure-as-Code Blueprint for FlowSpace
+# Documentation: https://render.com/docs/blueprint-spec
+version: "1"
+
+services:
+  - type: web
+    name: flowspace-api
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false
+        # Paste your Supabase Connection Pooler URL here in Render Dashboard
+      - key: SUPABASE_URL
+        sync: false
+        # Paste your Supabase Project URL (e.g. https://xyz.supabase.co)
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+        # Paste your Supabase Service Role Key (secret)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000,http://localhost:8080,https://flowspace.vercel.app"
