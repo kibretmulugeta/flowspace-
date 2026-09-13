@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
 import '../../features/home/presentation/screens/home_dashboard_screen.dart';
 import '../../features/notes/presentation/screens/notes_list_screen.dart';
+import '../../features/categories/presentation/screens/categories_screen.dart';
 import '../../features/projects/presentation/screens/projects_screen.dart';
 import '../../features/reminders/presentation/screens/reminders_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
@@ -90,6 +91,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RemindersScreen());
       case '/projects':
         return MaterialPageRoute(builder: (_) => const ProjectsScreen());
+      case '/categories':
+        return MaterialPageRoute(builder: (_) => const CategoriesScreen());
       case '/analytics':
         return MaterialPageRoute(builder: (_) => const AnalyticsScreen());
       case '/appearance':

@@ -21,6 +21,7 @@ class AppRoutes {
   static const String search = '/search';
   static const String reminders = '/reminders';
   static const String projects = '/projects';
+  static const String categories = '/categories';
   static const String settings = '/settings';
   static const String analytics = '/analytics';
   static const String appearance = '/appearance';

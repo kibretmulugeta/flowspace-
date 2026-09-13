@@ -32,6 +32,9 @@ class AppColors {
   static const Color accentRose = Color(0xFFF43F5E);
   static const Color accentAmber = Color(0xFFF59E0B);
   static const Color accentCyan = Color(0xFF06B6D4);
+  static const Color accentTeal = Color(0xFF14B8A6);
+  static const Color accentBlue = Color(0xFF3B82F6);
+  static const Color accentOrange = Color(0xFFF97316);
 
   // Priority Colors
   static const Color priorityUrgent = Color(0xFFEF4444);

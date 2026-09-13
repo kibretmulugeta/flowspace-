@@ -52,6 +52,8 @@ class CategoryNotifier extends Notifier<CategoryState> {
     state = state.copyWith(categories: cats, tags: tgs, isLoading: false);
   }
 
+  Future<void> loadCategories() => loadData();
+
   Future<Category> addCategory({
     required String name,
     required Color color,

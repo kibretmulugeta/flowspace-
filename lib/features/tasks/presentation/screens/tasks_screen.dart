@@ -4,7 +4,9 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../categories/presentation/category_provider.dart';
+import '../../../categories/presentation/widgets/category_edit_sheet.dart';
 import '../../../projects/presentation/project_provider.dart';
+import '../../../projects/presentation/widgets/project_edit_sheet.dart';
 import '../task_provider.dart';
 import '../widgets/task_edit_sheet.dart';
 import '../widgets/task_tile.dart';
@@ -84,53 +86,70 @@ class TasksScreen extends ConsumerWidget {
             ),
           ),
 
-          // Secondary Filter (Project / Category pills)
-          if (projects.isNotEmpty || categories.isNotEmpty)
-            Container(
-              height: 36,
-              margin: const EdgeInsets.only(bottom: 6),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  // All filter chip
+          // Secondary Filter (Project / Category pills with Quick Add)
+          Container(
+            height: 36,
+            margin: const EdgeInsets.only(bottom: 6),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                // All filter chip
+                Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: ChoiceChip(
+                    label: const Text('All Focus'),
+                    selected: taskState.selectedProjectId == null &&
+                        taskState.selectedCategoryId == null,
+                    onSelected: (_) {
+                      taskNotifier.setProjectFilter(null);
+                      taskNotifier.setCategoryFilter(null);
+                    },
+                  ),
+                ),
+                for (final proj in projects)
                   Padding(
                     padding: const EdgeInsets.only(right: 6.0),
                     child: ChoiceChip(
-                      label: const Text('All Focus'),
-                      selected: taskState.selectedProjectId == null &&
-                          taskState.selectedCategoryId == null,
-                      onSelected: (_) {
-                        taskNotifier.setProjectFilter(null);
-                        taskNotifier.setCategoryFilter(null);
+                      label: Text('${proj.icon} ${proj.name}'),
+                      selected: taskState.selectedProjectId == proj.id,
+                      onSelected: (selected) {
+                        taskNotifier.setProjectFilter(selected ? proj.id : null);
                       },
                     ),
                   ),
-                  for (final proj in projects)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6.0),
-                      child: ChoiceChip(
-                        label: Text('${proj.icon} ${proj.name}'),
-                        selected: taskState.selectedProjectId == proj.id,
-                        onSelected: (selected) {
-                          taskNotifier.setProjectFilter(selected ? proj.id : null);
-                        },
-                      ),
+                for (final cat in categories)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    child: ChoiceChip(
+                      label: Text(cat.name),
+                      selected: taskState.selectedCategoryId == cat.id,
+                      onSelected: (selected) {
+                        taskNotifier.setCategoryFilter(selected ? cat.id : null);
+                      },
                     ),
-                  for (final cat in categories)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6.0),
-                      child: ChoiceChip(
-                        label: Text(cat.name),
-                        selected: taskState.selectedCategoryId == cat.id,
-                        onSelected: (selected) {
-                          taskNotifier.setCategoryFilter(selected ? cat.id : null);
-                        },
-                      ),
-                    ),
-                ],
-              ),
+                  ),
+                // Quick Add Category Chip
+                Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.add, size: 14),
+                    label: const Text('Category'),
+                    onPressed: () => CategoryEditSheet.show(context),
+                  ),
+                ),
+                // Quick Add Project Chip
+                Padding(
+                  padding: const EdgeInsets.only(right: 6.0),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.add, size: 14),
+                    label: const Text('Project'),
+                    onPressed: () => ProjectEditSheet.show(context),
+                  ),
+                ),
+              ],
             ),
+          ),
 
           const Divider(height: 1),
 

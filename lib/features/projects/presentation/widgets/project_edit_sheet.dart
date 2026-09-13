@@ -11,8 +11,8 @@ class ProjectEditSheet extends ConsumerStatefulWidget {
 
   const ProjectEditSheet({super.key, this.existingProject});
 
-  static Future<void> show(BuildContext context, {Project? existingProject}) {
-    return showModalBottomSheet(
+  static Future<Project?> show(BuildContext context, {Project? existingProject}) {
+    return showModalBottomSheet<Project?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -78,8 +78,9 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
         dueDate: _dueDate,
       );
       await projNotifier.updateProject(updated);
+      if (mounted) Navigator.of(context).pop(updated);
     } else {
-      await projNotifier.createProject(
+      final created = await projNotifier.createProject(
         name: name,
         description: _descriptionController.text.trim(),
         icon: _icon,
@@ -88,27 +89,31 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
         startDate: _startDate,
         dueDate: _dueDate,
       );
+      if (mounted) Navigator.of(context).pop(created);
     }
-
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
 
-    return Container(
-      padding: EdgeInsets.only(
-        top: 16,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.9,
       ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
+      child: Container(
+        padding: EdgeInsets.only(
+          top: 16,
+          left: 20,
+          right: 20,
+          bottom: mediaQuery.viewInsets.bottom + mediaQuery.padding.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,6 +266,7 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

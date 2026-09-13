@@ -8,8 +8,13 @@ import '../../../../core/widgets/custom_badge.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../../calendar/presentation/calendar_provider.dart';
 import '../../../calendar/presentation/widgets/event_edit_sheet.dart';
+import '../../../categories/presentation/category_provider.dart';
+import '../../../categories/presentation/widgets/category_edit_sheet.dart';
 import '../../../notes/presentation/notes_provider.dart';
 import '../../../notes/presentation/screens/note_editor_screen.dart';
+import '../../../projects/presentation/project_provider.dart';
+import '../../../projects/presentation/screens/project_detail_screen.dart';
+import '../../../projects/presentation/widgets/project_edit_sheet.dart';
 import '../../../reminders/presentation/reminder_provider.dart';
 import '../../../reminders/presentation/widgets/reminder_edit_sheet.dart';
 import '../../../tasks/presentation/task_provider.dart';
@@ -25,7 +30,12 @@ class HomeDashboardScreen extends ConsumerWidget {
     final taskState = ref.watch(taskProvider);
     final calendarState = ref.watch(calendarProvider);
     final reminderState = ref.watch(reminderProvider);
+    final projectState = ref.watch(projectProvider);
+    final categoryState = ref.watch(categoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final projects = projectState.projects;
+    final categories = categoryState.categories;
 
     final userName = authState.user?.displayName ?? AppStrings.defaultUser;
     final now = DateTime.now();
@@ -87,6 +97,8 @@ class HomeDashboardScreen extends ConsumerWidget {
           await ref.read(taskProvider.notifier).loadTasks();
           await ref.read(calendarProvider.notifier).loadData();
           await ref.read(reminderProvider.notifier).loadReminders();
+          await ref.read(projectProvider.notifier).loadProjects();
+          await ref.read(categoryProvider.notifier).loadCategories();
         },
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -204,6 +216,67 @@ class HomeDashboardScreen extends ConsumerWidget {
                     onLongPress: () {},
                   ),
                 ),
+
+            const SizedBox(height: 24),
+
+            // PROJECTS Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Projects', style: AppTypography.titleLarge),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.add, size: 20),
+                      tooltip: 'Add Project',
+                      onPressed: () => ProjectEditSheet.show(context),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/projects'),
+                      child: Text(
+                        'View All',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildProjectsSection(context, projects, taskState.tasks, isDark),
+            const SizedBox(height: 24),
+
+            // CATEGORIES Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Categories', style: AppTypography.titleLarge),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.add, size: 20),
+                      tooltip: 'Add Category',
+                      onPressed: () => CategoryEditSheet.show(context),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/categories'),
+                      child: Text(
+                        'View All',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildCategoriesSection(context, categories, taskState.tasks, isDark),
 
             const SizedBox(height: 32),
           ],
@@ -412,6 +485,205 @@ class HomeDashboardScreen extends ConsumerWidget {
             const Icon(Icons.chevron_right, size: 18),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProjectsSection(
+    BuildContext context,
+    List<dynamic> projects,
+    List<dynamic> allTasks,
+    bool isDark,
+  ) {
+    if (projects.isEmpty) {
+      return InkWell(
+        onTap: () => ProjectEditSheet.show(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_circle_outline, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Add your first project',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 140,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: projects.length + 1,
+        itemBuilder: (context, index) {
+          if (index == projects.length) {
+            return InkWell(
+              onTap: () => ProjectEditSheet.show(context),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 120,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant)
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add, size: 28, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(height: 6),
+                    Text(
+                      'New Project',
+                      style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final proj = projects[index];
+          final tasks = allTasks.where((t) => t.projectId == proj.id).toList();
+          final completed = tasks.where((t) => t.isCompleted).length;
+          final progress = tasks.isNotEmpty ? completed / tasks.length : 0.0;
+
+          return InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProjectDetailScreen(projectId: proj.id),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 200,
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(proj.icon, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          proj.name,
+                          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          backgroundColor: isDark
+                              ? AppColors.darkSurfaceVariant
+                              : AppColors.lightSurfaceVariant,
+                          valueColor: AlwaysStoppedAnimation(proj.color),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$completed/${tasks.length} tasks',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                            ),
+                          ),
+                          Text(
+                            '${(progress * 100).toInt()}%',
+                            style: AppTypography.labelSmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: proj.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoriesSection(
+    BuildContext context,
+    List<dynamic> categories,
+    List<dynamic> allTasks,
+    bool isDark,
+  ) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final cat in categories) ...[
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ActionChip(
+                avatar: Text(
+                  cat.iconCode.isNotEmpty ? cat.iconCode : '📁',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                label: Text(
+                  '${cat.name} (${allTasks.where((t) => t.categoryId == cat.id).length})',
+                ),
+                backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+                side: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/categories');
+                },
+              ),
+            ),
+          ],
+          ActionChip(
+            avatar: const Icon(Icons.add, size: 16),
+            label: const Text('Add Category'),
+            onPressed: () => CategoryEditSheet.show(context),
+          ),
+        ],
       ),
     );
   }

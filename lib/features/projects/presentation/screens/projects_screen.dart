@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/custom_badge.dart';
 import '../../../../core/widgets/empty_state_view.dart';
 import '../../../tasks/presentation/task_provider.dart';
+import '../../domain/project_model.dart';
 import '../project_provider.dart';
 import '../widgets/project_edit_sheet.dart';
 import 'project_detail_screen.dart';
@@ -27,7 +28,13 @@ class ProjectsScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
+            tooltip: 'Search',
             onPressed: () => Navigator.of(context).pushNamed('/search'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Project',
+            onPressed: () => ProjectEditSheet.show(context),
           ),
         ],
       ),
@@ -112,6 +119,39 @@ class ProjectsScreen extends ConsumerWidget {
                               label: proj.status.label,
                               color: proj.status.color,
                             ),
+                            PopupMenuButton<String>(
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.more_vert, size: 20),
+                              onSelected: (val) {
+                                if (val == 'edit') {
+                                  ProjectEditSheet.show(context, existingProject: proj);
+                                } else if (val == 'delete') {
+                                  _confirmDeleteProject(context, ref, proj);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                                      SizedBox(width: 8),
+                                      Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         const SizedBox(height: 14),
@@ -157,6 +197,32 @@ class ProjectsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => ProjectEditSheet.show(context),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _confirmDeleteProject(BuildContext context, WidgetRef ref, Project project) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Project?'),
+        content: Text(
+          'Are you sure you want to delete "${project.name}"? Tasks associated with this project will be unlinked.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              ref.read(projectProvider.notifier).deleteProject(project.id);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

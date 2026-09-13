@@ -4,7 +4,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../categories/presentation/category_provider.dart';
+import '../../../categories/presentation/widgets/category_edit_sheet.dart';
 import '../../../projects/presentation/project_provider.dart';
+import '../../../projects/presentation/widgets/project_edit_sheet.dart';
 import '../../domain/task_model.dart';
 import '../task_provider.dart';
 
@@ -372,10 +374,22 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
                 // Project Selector
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    initialValue: _projectId,
-                    decoration: const InputDecoration(
+                    key: ValueKey('proj_$_projectId'),
+                    initialValue: projects.any((p) => p.id == _projectId) ? _projectId : null,
+                    isExpanded: true,
+                    decoration: InputDecoration(
                       labelText: 'Project',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                        tooltip: 'New Project',
+                        onPressed: () async {
+                          final newProj = await ProjectEditSheet.show(context);
+                          if (newProj != null) {
+                            setState(() => _projectId = newProj.id);
+                          }
+                        },
+                      ),
                     ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('None')),
@@ -393,10 +407,22 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
                 // Category Selector
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    initialValue: _categoryId,
-                    decoration: const InputDecoration(
+                    key: ValueKey('cat_$_categoryId'),
+                    initialValue: categories.any((c) => c.id == _categoryId) ? _categoryId : null,
+                    isExpanded: true,
+                    decoration: InputDecoration(
                       labelText: 'Category',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                        tooltip: 'New Category',
+                        onPressed: () async {
+                          final newCat = await CategoryEditSheet.show(context);
+                          if (newCat != null) {
+                            setState(() => _categoryId = newCat.id);
+                          }
+                        },
+                      ),
                     ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('None')),
