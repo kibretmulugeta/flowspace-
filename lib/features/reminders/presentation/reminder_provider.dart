@@ -79,6 +79,12 @@ class ReminderNotifier extends Notifier<ReminderState> {
     return newReminder;
   }
 
+  Future<void> updateReminder(Reminder reminder) async {
+    await _repository.updateReminder(reminder);
+    final list = state.reminders.map((r) => r.id == reminder.id ? reminder : r).toList();
+    state = state.copyWith(reminders: list);
+  }
+
   Future<void> completeReminder(String id) async {
     await _repository.completeReminder(id);
     final list = state.reminders.map((r) {

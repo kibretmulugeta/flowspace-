@@ -39,6 +39,8 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
   String? _projectId;
   String _recurrence = 'none';
   bool _isAllDay = false;
+  String? _titleError;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -77,55 +79,86 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
 
   void _onSave() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    final start = DateTime(
-      _startDate.year,
-      _startDate.month,
-      _startDate.day,
-      _startTime.hour,
-      _startTime.minute,
-    );
-    final end = DateTime(
-      _endDate.year,
-      _endDate.month,
-      _endDate.day,
-      _endTime.hour,
-      _endTime.minute,
-    );
-
-    final calNotifier = ref.read(calendarProvider.notifier);
-
-    if (widget.existingEvent != null) {
-      final updated = widget.existingEvent!.copyWith(
-        title: title,
-        description: _descriptionController.text.trim(),
-        location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-        startDateTime: start,
-        endDateTime: end,
-        colorValue: _selectedColor.toARGB32(),
-        calendarId: _calendarId,
-        projectId: _projectId,
-        recurrence: _recurrence,
-        isAllDay: _isAllDay,
+    if (title.isEmpty) {
+      setState(() => _titleError = 'Please enter an event title');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an event title'),
+          duration: Duration(seconds: 2),
+        ),
       );
-      await calNotifier.updateEvent(updated);
-    } else {
-      await calNotifier.addEvent(
-        title: title,
-        description: _descriptionController.text.trim(),
-        startDateTime: start,
-        endDateTime: end,
-        location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-        color: _selectedColor,
-        calendarId: _calendarId,
-        projectId: _projectId,
-        recurrence: _recurrence,
-        isAllDay: _isAllDay,
-      );
+      return;
     }
 
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _isSaving = true);
+
+    try {
+      final start = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _startTime.hour,
+        _startTime.minute,
+      );
+      final end = DateTime(
+        _endDate.year,
+        _endDate.month,
+        _endDate.day,
+        _endTime.hour,
+        _endTime.minute,
+      );
+
+      final calNotifier = ref.read(calendarProvider.notifier);
+
+      if (widget.existingEvent != null) {
+        final updated = widget.existingEvent!.copyWith(
+          title: title,
+          description: _descriptionController.text.trim(),
+          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          startDateTime: start,
+          endDateTime: end,
+          colorValue: _selectedColor.toARGB32(),
+          calendarId: _calendarId,
+          projectId: _projectId,
+          recurrence: _recurrence,
+          isAllDay: _isAllDay,
+        );
+        await calNotifier.updateEvent(updated);
+      } else {
+        await calNotifier.addEvent(
+          title: title,
+          description: _descriptionController.text.trim(),
+          startDateTime: start,
+          endDateTime: end,
+          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          color: _selectedColor,
+          calendarId: _calendarId,
+          projectId: _projectId,
+          recurrence: _recurrence,
+          isAllDay: _isAllDay,
+        );
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.existingEvent != null ? 'Event updated' : 'Event created'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save event: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -202,11 +235,17 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
                     ],
                     const SizedBox(width: 4),
                     FilledButton(
-                      onPressed: _onSave,
+                      onPressed: _isSaving ? null : _onSave,
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Save'),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Save'),
                     ),
                   ],
                 ),
@@ -218,9 +257,15 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
             TextField(
               controller: _titleController,
               autofocus: widget.existingEvent == null,
+              onChanged: (_) {
+                if (_titleError != null) {
+                  setState(() => _titleError = null);
+                }
+              },
               style: AppTypography.headlineMedium,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Event title...',
+                errorText: _titleError,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -430,6 +475,26 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
               maxLines: 3,
               decoration: const InputDecoration(
                 hintText: 'Add notes, agenda items, or participants...',
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Full-width bottom action button for mobile thumb tapping
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: _isSaving ? null : _onSave,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        widget.existingEvent != null ? 'Save Changes' : 'Create Event',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ],

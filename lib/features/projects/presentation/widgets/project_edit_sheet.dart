@@ -32,6 +32,8 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
   ProjectStatus _status = ProjectStatus.active;
   DateTime? _startDate;
   DateTime? _dueDate;
+  String? _nameError;
+  bool _isSaving = false;
 
   final List<String> _icons = ['🚀', '🔬', '⚡', '💻', '📁', '💡', '🌐', '📚', '🎯', '🎨'];
 
@@ -63,33 +65,72 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
 
   void _onSave() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-
-    final projNotifier = ref.read(projectProvider.notifier);
-
-    if (widget.existingProject != null) {
-      final updated = widget.existingProject!.copyWith(
-        name: name,
-        description: _descriptionController.text.trim(),
-        icon: _icon,
-        colorValue: _color.toARGB32(),
-        status: _status,
-        startDate: _startDate,
-        dueDate: _dueDate,
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Please enter a project name');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a project name'),
+          duration: Duration(seconds: 2),
+        ),
       );
-      await projNotifier.updateProject(updated);
-      if (mounted) Navigator.of(context).pop(updated);
-    } else {
-      final created = await projNotifier.createProject(
-        name: name,
-        description: _descriptionController.text.trim(),
-        icon: _icon,
-        color: _color,
-        status: _status,
-        startDate: _startDate,
-        dueDate: _dueDate,
-      );
-      if (mounted) Navigator.of(context).pop(created);
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final projNotifier = ref.read(projectProvider.notifier);
+
+      if (widget.existingProject != null) {
+        final updated = widget.existingProject!.copyWith(
+          name: name,
+          description: _descriptionController.text.trim(),
+          icon: _icon,
+          colorValue: _color.toARGB32(),
+          status: _status,
+          startDate: _startDate,
+          dueDate: _dueDate,
+        );
+        await projNotifier.updateProject(updated);
+        if (mounted) {
+          Navigator.of(context).pop(updated);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Project updated'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        final created = await projNotifier.createProject(
+          name: name,
+          description: _descriptionController.text.trim(),
+          icon: _icon,
+          color: _color,
+          status: _status,
+          startDate: _startDate,
+          dueDate: _dueDate,
+        );
+        if (mounted) {
+          Navigator.of(context).pop(created);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Project created'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save project: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -137,8 +178,14 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
                   style: AppTypography.titleLarge,
                 ),
                 FilledButton(
-                  onPressed: _onSave,
-                  child: const Text('Save'),
+                  onPressed: _isSaving ? null : _onSave,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Save'),
                 ),
               ],
             ),
@@ -177,7 +224,15 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
             // Name
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Project Name'),
+              onChanged: (_) {
+                if (_nameError != null) {
+                  setState(() => _nameError = null);
+                }
+              },
+              decoration: InputDecoration(
+                labelText: 'Project Name',
+                errorText: _nameError,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -262,6 +317,26 @@ class _ProjectEditSheetState extends ConsumerState<ProjectEditSheet> {
                   ),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 24),
+
+            // Full-width bottom action button for mobile thumb tapping
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: _isSaving ? null : _onSave,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        widget.existingProject != null ? 'Save Changes' : 'Create Project',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
             ),
           ],
         ),

@@ -27,6 +27,8 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
   late final TextEditingController _nameController;
   String _selectedIcon = '📁';
   Color _selectedColor = AppColors.accentIndigo;
+  String? _nameError;
+  bool _isSaving = false;
 
   final List<String> _icons = [
     '📁', '💼', '🏠', '🎓', '💡', '🏃', '💰', '🎨', '🛒', '📌', '🚀', '⭐', '❤️', '⚡'
@@ -63,25 +65,64 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
 
   void _onSave() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-
-    final notifier = ref.read(categoryProvider.notifier);
-
-    if (widget.existingCategory != null) {
-      final updated = widget.existingCategory!.copyWith(
-        name: name,
-        colorValue: _selectedColor.toARGB32(),
-        iconCode: _selectedIcon,
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Please enter a category name');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a category name'),
+          duration: Duration(seconds: 2),
+        ),
       );
-      await notifier.updateCategory(updated);
-      if (mounted) Navigator.of(context).pop(updated);
-    } else {
-      final created = await notifier.addCategory(
-        name: name,
-        color: _selectedColor,
-        iconCode: _selectedIcon,
-      );
-      if (mounted) Navigator.of(context).pop(created);
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final notifier = ref.read(categoryProvider.notifier);
+
+      if (widget.existingCategory != null) {
+        final updated = widget.existingCategory!.copyWith(
+          name: name,
+          colorValue: _selectedColor.toARGB32(),
+          iconCode: _selectedIcon,
+        );
+        await notifier.updateCategory(updated);
+        if (mounted) {
+          Navigator.of(context).pop(updated);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Category updated'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        final created = await notifier.addCategory(
+          name: name,
+          color: _selectedColor,
+          iconCode: _selectedIcon,
+        );
+        if (mounted) {
+          Navigator.of(context).pop(created);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Category created'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save category: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -132,12 +173,18 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
                     style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
                   ),
                   FilledButton(
-                    onPressed: _onSave,
+                    onPressed: _isSaving ? null : _onSave,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('Save'),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Save'),
                   ),
                 ],
               ),
@@ -147,10 +194,16 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
               TextField(
                 controller: _nameController,
                 autofocus: widget.existingCategory == null,
+                onChanged: (_) {
+                  if (_nameError != null) {
+                    setState(() => _nameError = null);
+                  }
+                },
                 style: AppTypography.titleMedium,
                 decoration: InputDecoration(
                   labelText: 'Category Name',
                   hintText: 'e.g. Personal, Work, Marketing...',
+                  errorText: _nameError,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: Padding(
                     padding: const EdgeInsets.all(10.0),
@@ -226,6 +279,26 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
                     ),
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Full-width bottom action button for mobile thumb tapping
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton(
+                  onPressed: _isSaving ? null : _onSave,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          widget.existingCategory != null ? 'Save Changes' : 'Create Category',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                ),
               ),
               const SizedBox(height: 16),
             ],

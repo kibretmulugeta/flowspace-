@@ -38,10 +38,12 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
   TaskStatus _status = TaskStatus.todo;
   String? _projectId;
   String? _categoryId;
+  int _estimatedDuration = 30;
   List<String> _subtasks = [];
   List<bool> _subtasksCompleted = [];
   List<String> _tags = [];
-  int _estimatedDuration = 30;
+  String? _titleError;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -77,44 +79,75 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
 
   void _onSave() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    final taskNotifier = ref.read(taskProvider.notifier);
-
-    if (widget.existingTask != null) {
-      final updated = widget.existingTask!.copyWith(
-        title: title,
-        description: _descriptionController.text.trim(),
-        dueDate: _dueDate,
-        dueTime: _dueTime,
-        priority: _priority,
-        status: _status,
-        projectId: _projectId,
-        categoryId: _categoryId,
-        subtasks: _subtasks,
-        subtasksCompleted: _subtasksCompleted,
-        tags: _tags,
-        estimatedDurationMinutes: _estimatedDuration,
-        isCompleted: _status == TaskStatus.completed,
+    if (title.isEmpty) {
+      setState(() => _titleError = 'Please enter a task title');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a task title'),
+          duration: Duration(seconds: 2),
+        ),
       );
-      await taskNotifier.updateTask(updated);
-    } else {
-      await taskNotifier.addTask(
-        title: title,
-        description: _descriptionController.text.trim(),
-        dueDate: _dueDate,
-        dueTime: _dueTime,
-        priority: _priority,
-        status: _status,
-        projectId: _projectId,
-        categoryId: _categoryId,
-        subtasks: _subtasks,
-        tags: _tags,
-        estimatedMinutes: _estimatedDuration,
-      );
+      return;
     }
 
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _isSaving = true);
+
+    try {
+      final taskNotifier = ref.read(taskProvider.notifier);
+
+      if (widget.existingTask != null) {
+        final updated = widget.existingTask!.copyWith(
+          title: title,
+          description: _descriptionController.text.trim(),
+          dueDate: _dueDate,
+          dueTime: _dueTime,
+          priority: _priority,
+          status: _status,
+          projectId: _projectId,
+          categoryId: _categoryId,
+          subtasks: _subtasks,
+          subtasksCompleted: _subtasksCompleted,
+          tags: _tags,
+          estimatedDurationMinutes: _estimatedDuration,
+          isCompleted: _status == TaskStatus.completed,
+        );
+        await taskNotifier.updateTask(updated);
+      } else {
+        await taskNotifier.addTask(
+          title: title,
+          description: _descriptionController.text.trim(),
+          dueDate: _dueDate,
+          dueTime: _dueTime,
+          priority: _priority,
+          status: _status,
+          projectId: _projectId,
+          categoryId: _categoryId,
+          subtasks: _subtasks,
+          tags: _tags,
+          estimatedMinutes: _estimatedDuration,
+        );
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.existingTask != null ? 'Task updated' : 'Task created'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save task: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   void _pickDueDate() async {
@@ -201,61 +234,74 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle Bar
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  widget.existingTask != null ? 'Edit Task' : 'New Task',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle Bar
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                FilledButton(
-                  onPressed: _onSave,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+              ),
+              const SizedBox(height: 16),
 
-            // Title Field
-            TextField(
-              controller: _titleController,
-              autofocus: widget.existingTask == null,
-              style: AppTypography.headlineMedium.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.existingTask != null ? 'Edit Task' : 'New Task',
+                    style: AppTypography.titleLarge.copyWith(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: _isSaving ? null : _onSave,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Save'),
+                  ),
+                ],
               ),
-              decoration: const InputDecoration(
-                hintText: 'Task title...',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
+              const SizedBox(height: 20),
+
+              // Title Field
+              TextField(
+                controller: _titleController,
+                autofocus: widget.existingTask == null,
+                onChanged: (_) {
+                  if (_titleError != null) {
+                    setState(() => _titleError = null);
+                  }
+                },
+                style: AppTypography.headlineMedium.copyWith(
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Task title...',
+                  errorText: _titleError,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
-            ),
             const SizedBox(height: 10),
 
             // Description Field
@@ -502,6 +548,26 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
                   icon: const Icon(Icons.arrow_forward, size: 18),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            // Full-width bottom action button for quick mobile thumb tapping
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: _isSaving ? null : _onSave,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        widget.existingTask != null ? 'Save Changes' : 'Create Task',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
             ),
           ],
         ),
