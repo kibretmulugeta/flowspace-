@@ -1,28 +1,42 @@
 import 'package:uuid/uuid.dart';
-import '../../../core/constants/sample_data.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../domain/calendar_event_model.dart';
 import '../domain/calendar_model.dart';
 import '../domain/calendar_repository.dart';
 
-/// Concrete CalendarRepository implementation
+/// Concrete persistent CalendarRepository backed by LocalDatabaseService
 class CalendarRepositoryImpl implements CalendarRepository {
-  final List<Calendar> _calendars = List.from(SampleData.calendars);
-  final List<CalendarEvent> _events = List.from(SampleData.calendarEvents);
+  List<Calendar>? _calendars;
+  List<CalendarEvent>? _events;
+  final LocalDatabaseService _db = LocalDatabaseService.instance;
   final _uuid = const Uuid();
+
+  Future<List<Calendar>> _ensureCalendarsLoaded() async {
+    _calendars ??= await _db.loadCalendars();
+    return _calendars!;
+  }
+
+  Future<List<CalendarEvent>> _ensureEventsLoaded() async {
+    _events ??= await _db.loadEvents();
+    return _events!;
+  }
 
   @override
   Future<List<Calendar>> getCalendars() async {
-    return List.unmodifiable(_calendars);
+    final calendars = await _ensureCalendarsLoaded();
+    return List.unmodifiable(calendars);
   }
 
   @override
   Future<List<CalendarEvent>> getEvents() async {
-    return List.unmodifiable(_events);
+    final events = await _ensureEventsLoaded();
+    return List.unmodifiable(events);
   }
 
   @override
   Future<List<CalendarEvent>> getEventsForRange(DateTime start, DateTime end) async {
-    return _events.where((event) {
+    final events = await _ensureEventsLoaded();
+    return events.where((event) {
       return event.startDateTime.isAfter(start.subtract(const Duration(seconds: 1))) &&
           event.startDateTime.isBefore(end.add(const Duration(seconds: 1)));
     }).toList();
@@ -30,8 +44,9 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
   @override
   Future<CalendarEvent?> getEventById(String id) async {
+    final events = await _ensureEventsLoaded();
     try {
-      return _events.firstWhere((e) => e.id == id);
+      return events.firstWhere((e) => e.id == id);
     } catch (_) {
       return null;
     }
@@ -39,24 +54,30 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
   @override
   Future<CalendarEvent> createEvent(CalendarEvent event) async {
-    _events.add(event);
+    final events = await _ensureEventsLoaded();
+    events.add(event);
+    await _db.saveEvents(events);
     return event;
   }
 
   @override
   Future<CalendarEvent> updateEvent(CalendarEvent event) async {
-    final index = _events.indexWhere((e) => e.id == event.id);
+    final events = await _ensureEventsLoaded();
+    final index = events.indexWhere((e) => e.id == event.id);
     if (index != -1) {
-      _events[index] = event;
+      events[index] = event;
     } else {
-      _events.add(event);
+      events.add(event);
     }
+    await _db.saveEvents(events);
     return event;
   }
 
   @override
   Future<void> deleteEvent(String id) async {
-    _events.removeWhere((e) => e.id == id);
+    final events = await _ensureEventsLoaded();
+    events.removeWhere((e) => e.id == id);
+    await _db.saveEvents(events);
   }
 
   @override
@@ -74,7 +95,9 @@ class CalendarRepositoryImpl implements CalendarRepository {
       createdAt: now,
       updatedAt: now,
     );
-    _events.add(duplicated);
+    final events = await _ensureEventsLoaded();
+    events.add(duplicated);
+    await _db.saveEvents(events);
     return duplicated;
   }
 }

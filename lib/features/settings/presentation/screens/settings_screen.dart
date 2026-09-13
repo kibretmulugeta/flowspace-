@@ -139,11 +139,10 @@ class SettingsScreen extends ConsumerWidget {
                 value: settingsState.notificationsEnabled,
                 onChanged: (val) => settingsNotifier.toggleNotifications(val),
               ),
-              const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.cloud_sync_outlined),
-                title: const Text('Backup & Cloud Sync'),
-                subtitle: Text(settingsState.isOnline ? 'Online' : 'Offline mode'),
+                leading: const Icon(Icons.storage, color: AppColors.accentEmerald),
+                title: const Text('Database & Workspace Storage'),
+                subtitle: const Text('Connected • Persistent Key-Value & Document Engine'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.of(context).push(

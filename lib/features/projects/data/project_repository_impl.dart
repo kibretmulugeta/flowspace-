@@ -1,20 +1,28 @@
-import '../../../core/constants/sample_data.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../domain/project_model.dart';
 import '../domain/project_repository.dart';
 
-/// Concrete ProjectRepository implementation
+/// Concrete persistent ProjectRepository backed by LocalDatabaseService
 class ProjectRepositoryImpl implements ProjectRepository {
-  final List<Project> _projects = List.from(SampleData.projects);
+  List<Project>? _projects;
+  final LocalDatabaseService _db = LocalDatabaseService.instance;
+
+  Future<List<Project>> _ensureLoaded() async {
+    _projects ??= await _db.loadProjects();
+    return _projects!;
+  }
 
   @override
   Future<List<Project>> getProjects() async {
-    return List.unmodifiable(_projects);
+    final projects = await _ensureLoaded();
+    return List.unmodifiable(projects);
   }
 
   @override
   Future<Project?> getProjectById(String id) async {
+    final projects = await _ensureLoaded();
     try {
-      return _projects.firstWhere((p) => p.id == id);
+      return projects.firstWhere((p) => p.id == id);
     } catch (_) {
       return null;
     }
@@ -22,23 +30,29 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   @override
   Future<Project> createProject(Project project) async {
-    _projects.insert(0, project);
+    final projects = await _ensureLoaded();
+    projects.insert(0, project);
+    await _db.saveProjects(projects);
     return project;
   }
 
   @override
   Future<Project> updateProject(Project project) async {
-    final index = _projects.indexWhere((p) => p.id == project.id);
+    final projects = await _ensureLoaded();
+    final index = projects.indexWhere((p) => p.id == project.id);
     if (index != -1) {
-      _projects[index] = project;
+      projects[index] = project;
     } else {
-      _projects.add(project);
+      projects.add(project);
     }
+    await _db.saveProjects(projects);
     return project;
   }
 
   @override
   Future<void> deleteProject(String id) async {
-    _projects.removeWhere((p) => p.id == id);
+    final projects = await _ensureLoaded();
+    projects.removeWhere((p) => p.id == id);
+    await _db.saveProjects(projects);
   }
 }

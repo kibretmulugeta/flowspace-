@@ -1,21 +1,29 @@
-import '../../../core/constants/sample_data.dart';
+import '../../../core/storage/local_database_service.dart';
 import '../domain/editor_block_model.dart';
 import '../domain/note_page_model.dart';
 import '../domain/notes_repository.dart';
 
-/// Concrete NotesRepository implementation
+/// Concrete persistent NotesRepository backed by LocalDatabaseService
 class NotesRepositoryImpl implements NotesRepository {
-  final List<NotePage> _pages = List.from(SampleData.notePages);
+  List<NotePage>? _pages;
+  final LocalDatabaseService _db = LocalDatabaseService.instance;
+
+  Future<List<NotePage>> _ensureLoaded() async {
+    _pages ??= await _db.loadNotes();
+    return _pages!;
+  }
 
   @override
   Future<List<NotePage>> getPages() async {
-    return List.unmodifiable(_pages);
+    final pages = await _ensureLoaded();
+    return List.unmodifiable(pages);
   }
 
   @override
   Future<NotePage?> getPageById(String id) async {
+    final pages = await _ensureLoaded();
     try {
-      return _pages.firstWhere((p) => p.id == id);
+      return pages.firstWhere((p) => p.id == id);
     } catch (_) {
       return null;
     }
@@ -23,71 +31,86 @@ class NotesRepositoryImpl implements NotesRepository {
 
   @override
   Future<List<NotePage>> getSubpages(String parentId) async {
-    return _pages.where((p) => p.parentPageId == parentId && !p.isTrash).toList();
+    final pages = await _ensureLoaded();
+    return pages.where((p) => p.parentPageId == parentId && !p.isTrash).toList();
   }
 
   @override
   Future<NotePage> createPage(NotePage page) async {
-    _pages.insert(0, page);
+    final pages = await _ensureLoaded();
+    pages.insert(0, page);
+    await _db.saveNotes(pages);
     return page;
   }
 
   @override
   Future<NotePage> updatePage(NotePage page) async {
-    final index = _pages.indexWhere((p) => p.id == page.id);
+    final pages = await _ensureLoaded();
+    final index = pages.indexWhere((p) => p.id == page.id);
     if (index != -1) {
-      _pages[index] = page;
+      pages[index] = page;
     } else {
-      _pages.insert(0, page);
+      pages.insert(0, page);
     }
+    await _db.saveNotes(pages);
     return page;
   }
 
   @override
   Future<void> deletePage(String id) async {
-    _pages.removeWhere((p) => p.id == id);
+    final pages = await _ensureLoaded();
+    pages.removeWhere((p) => p.id == id);
+    await _db.saveNotes(pages);
   }
 
   @override
   Future<void> toggleFavorite(String id) async {
-    final index = _pages.indexWhere((p) => p.id == id);
+    final pages = await _ensureLoaded();
+    final index = pages.indexWhere((p) => p.id == id);
     if (index != -1) {
-      final current = _pages[index];
-      _pages[index] = current.copyWith(
+      final current = pages[index];
+      pages[index] = current.copyWith(
         isFavorite: !current.isFavorite,
         updatedAt: DateTime.now(),
       );
+      await _db.saveNotes(pages);
     }
   }
 
   @override
   Future<void> moveToTrash(String id) async {
-    final index = _pages.indexWhere((p) => p.id == id);
+    final pages = await _ensureLoaded();
+    final index = pages.indexWhere((p) => p.id == id);
     if (index != -1) {
-      _pages[index] = _pages[index].copyWith(isTrash: true, updatedAt: DateTime.now());
+      pages[index] = pages[index].copyWith(isTrash: true, updatedAt: DateTime.now());
+      await _db.saveNotes(pages);
     }
   }
 
   @override
   Future<void> restoreFromTrash(String id) async {
-    final index = _pages.indexWhere((p) => p.id == id);
+    final pages = await _ensureLoaded();
+    final index = pages.indexWhere((p) => p.id == id);
     if (index != -1) {
-      _pages[index] = _pages[index].copyWith(isTrash: false, updatedAt: DateTime.now());
+      pages[index] = pages[index].copyWith(isTrash: false, updatedAt: DateTime.now());
+      await _db.saveNotes(pages);
     }
   }
 
   @override
   Future<void> reorderBlocks(String pageId, int oldIndex, int newIndex) async {
-    final index = _pages.indexWhere((p) => p.id == pageId);
+    final pages = await _ensureLoaded();
+    final index = pages.indexWhere((p) => p.id == pageId);
     if (index != -1) {
-      final page = _pages[index];
+      final page = pages[index];
       final blocks = List<EditorBlock>.from(page.blocks);
       if (oldIndex < newIndex) {
         newIndex -= 1;
       }
       final block = blocks.removeAt(oldIndex);
       blocks.insert(newIndex, block);
-      _pages[index] = page.copyWith(blocks: blocks, updatedAt: DateTime.now());
+      pages[index] = page.copyWith(blocks: blocks, updatedAt: DateTime.now());
+      await _db.saveNotes(pages);
     }
   }
 }
