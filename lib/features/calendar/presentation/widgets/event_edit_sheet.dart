@@ -133,22 +133,27 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final calendars = ref.watch(calendarProvider).calendars;
     final projects = ref.watch(projectProvider).projects;
+    final mediaQuery = MediaQuery.of(context);
 
-    return Container(
-      padding: EdgeInsets.only(
-        top: 16,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.9,
       ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: 16,
+          left: 20,
+          right: 20,
+          bottom: mediaQuery.viewInsets.bottom + mediaQuery.padding.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Handle Bar
             Center(
@@ -251,6 +256,14 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
                         initialDate: _startDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2035),
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
                       );
                       if (picked != null) setState(() => _startDate = picked);
                     },
@@ -260,7 +273,18 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
                 if (!_isAllDay)
                   InkWell(
                     onTap: () async {
-                      final t = await showTimePicker(context: context, initialTime: _startTime);
+                      final t = await showTimePicker(
+                        context: context,
+                        initialTime: _startTime,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
+                      );
                       if (t != null) setState(() => _startTime = t);
                     },
                     child: Container(
@@ -288,6 +312,14 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
                         initialDate: _endDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2035),
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
                       );
                       if (picked != null) setState(() => _endDate = picked);
                     },
@@ -297,7 +329,18 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
                 if (!_isAllDay)
                   InkWell(
                     onTap: () async {
-                      final t = await showTimePicker(context: context, initialTime: _endTime);
+                      final t = await showTimePicker(
+                        context: context,
+                        initialTime: _endTime,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
+                      );
                       if (t != null) setState(() => _endTime = t);
                     },
                     child: Container(
@@ -392,6 +435,7 @@ class _EventEditSheetState extends ConsumerState<EventEditSheet> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

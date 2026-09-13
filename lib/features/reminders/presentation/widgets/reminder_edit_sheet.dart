@@ -97,22 +97,27 @@ class _ReminderEditSheetState extends ConsumerState<ReminderEditSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
 
-    return Container(
-      padding: EdgeInsets.only(
-        top: 16,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.9,
       ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        padding: EdgeInsets.only(
+          top: 16,
+          left: 20,
+          right: 20,
+          bottom: mediaQuery.viewInsets.bottom + mediaQuery.padding.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
@@ -162,8 +167,16 @@ class _ReminderEditSheetState extends ConsumerState<ReminderEditSheet> {
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: _scheduledDate,
-                        firstDate: DateTime.now(),
+                        firstDate: DateTime(2020),
                         lastDate: DateTime(2035),
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
                       );
                       if (picked != null) setState(() => _scheduledDate = picked);
                     },
@@ -180,6 +193,14 @@ class _ReminderEditSheetState extends ConsumerState<ReminderEditSheet> {
                       final picked = await showTimePicker(
                         context: context,
                         initialTime: _scheduledTime,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.0),
+                            ),
+                            child: child ?? const SizedBox(),
+                          );
+                        },
                       );
                       if (picked != null) setState(() => _scheduledTime = picked);
                     },
@@ -207,6 +228,7 @@ class _ReminderEditSheetState extends ConsumerState<ReminderEditSheet> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

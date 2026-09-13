@@ -121,6 +121,14 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
       initialDate: _dueDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.0),
+          ),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (picked != null) {
       setState(() => _dueDate = picked);
@@ -128,9 +136,27 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
   }
 
   void _pickDueTime() async {
+    TimeOfDay initial = TimeOfDay.now();
+    if (_dueTime != null) {
+      final parts = _dueTime!.split(':');
+      if (parts.length == 2) {
+        initial = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? initial.hour,
+          minute: int.tryParse(parts[1]) ?? initial.minute,
+        );
+      }
+    }
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: initial,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.0),
+          ),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (time != null) {
       setState(() {
@@ -155,19 +181,24 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final projects = ref.watch(projectProvider).projects;
     final categories = ref.watch(categoryProvider).categories;
+    final mediaQuery = MediaQuery.of(context);
 
-    return Container(
-      padding: EdgeInsets.only(
-        top: 16,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * 0.9,
       ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
+      child: Container(
+        padding: EdgeInsets.only(
+          top: 16,
+          left: 20,
+          right: 20,
+          bottom: mediaQuery.viewInsets.bottom + mediaQuery.padding.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,6 +480,7 @@ class _TaskEditSheetState extends ConsumerState<TaskEditSheet> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
