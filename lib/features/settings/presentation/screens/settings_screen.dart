@@ -5,6 +5,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../auth/presentation/auth_provider.dart';
+import '../../../../core/services/notification_service.dart';
 import '../settings_provider.dart';
 import 'appearance_screen.dart';
 import 'backup_sync_screen.dart';
@@ -139,6 +140,36 @@ class SettingsScreen extends ConsumerWidget {
                 value: settingsState.notificationsEnabled,
                 onChanged: (val) => settingsNotifier.toggleNotifications(val),
               ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.notifications_active_outlined, color: AppColors.accentIndigo),
+                title: const Text('Test Screen Alert Banner'),
+                subtitle: const Text('Preview in-app heads-up notification card'),
+                trailing: const Icon(Icons.play_arrow_rounded),
+                onTap: () {
+                  ref.read(notificationServiceProvider.notifier).triggerTestNotification(type: 'task');
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.language, color: AppColors.accentCyan),
+                title: const Text('Enable Browser Notifications'),
+                subtitle: const Text('Allow Safari / Chrome to push desktop & mobile alerts'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final granted = await ref.read(notificationServiceProvider.notifier).requestBrowserPermission();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(granted
+                            ? 'Browser notifications enabled!'
+                            : 'Notification permission not granted in browser settings'),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.storage, color: AppColors.accentEmerald),
                 title: const Text('Database & Workspace Storage'),

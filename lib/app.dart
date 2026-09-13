@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/in_app_notification_overlay.dart';
 import 'features/settings/presentation/settings_provider.dart';
 
 class FlowSpaceApp extends ConsumerWidget {
@@ -20,6 +21,9 @@ class FlowSpaceApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       onGenerateRoute: AppRouter.onGenerateRoute,
       initialRoute: '/',
+      builder: (context, child) {
+        return InAppNotificationOverlay(child: child ?? const SizedBox());
+      },
     );
   }
 }

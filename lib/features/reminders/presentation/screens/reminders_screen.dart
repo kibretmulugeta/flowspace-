@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/custom_badge.dart';
 import '../../../../core/widgets/empty_state_view.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../domain/reminder_model.dart';
 import '../reminder_provider.dart';
 import '../widgets/reminder_edit_sheet.dart';
@@ -24,6 +25,20 @@ class RemindersScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.reminders),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'Test Screen Notification',
+            onPressed: () {
+              ref.read(notificationServiceProvider.notifier).triggerTestNotification(type: 'reminder');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Reminder',
+            onPressed: () => ReminderEditSheet.show(context),
+          ),
+        ],
       ),
       body: pending.isEmpty && completed.isEmpty
           ? EmptyStateView(
