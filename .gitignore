@@ -65,3 +65,8 @@ dist/
 backend/.env
 backend/.env.*
 !backend/.env.example
+
+# Local build outputs
+build_artifacts/
+*.ipa
+*.aab
