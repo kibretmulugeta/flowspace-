@@ -283,3 +283,40 @@ class SyncOutboxAudit(Base):
     entity_id = Column(String(100), nullable=False)
     payload = Column(JSON, default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class ScheduleMode(str):
+    DELAY = "delay"
+    BOUNDED = "bounded"
+    RECURRENT = "recurrent"
+    DEPENDENT = "dependent"
+
+
+class Schedule(Base):
+    __tablename__ = "schedules"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    category_id = Column(String(36), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    mode = Column(String(20), default=ScheduleMode.DELAY, nullable=False, index=True)
+
+    # Time Dimension Fields
+    delay_offset = Column(String(50), nullable=True)  # e.g., '2 hours', '3 days', or ISO 8601
+    window_start = Column(DateTime(timezone=True), nullable=True)
+    window_end = Column(DateTime(timezone=True), nullable=True)
+    rrule = Column(Text, nullable=True)
+    prerequisite_id = Column(String(36), ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # State Tracking
+    status = Column(String(20), default="pending", nullable=False, index=True)  # pending, active, completed, blocked
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    next_run_at = Column(DateTime(timezone=True), nullable=True, index=True)
+
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="schedules")
+    category = relationship("Category", backref="schedules")
+    prerequisite = relationship("Schedule", remote_side=[id], backref="dependents")

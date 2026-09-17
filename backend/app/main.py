@@ -1,10 +1,10 @@
-"""FlowSpace FastAPI Backend Main Application Entrypoint."""
+﻿"""FlowSpace FastAPI Backend Main Application Entrypoint."""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import engine, Base
-from app.api import auth, tasks, calendar, reminders, notes, projects, search, sync
+from app.api import auth, tasks, calendar, reminders, notes, projects, search, sync, schedules
 
 
 @asynccontextmanager
@@ -63,3 +63,4 @@ app.include_router(notes.router, prefix=settings.API_V1_STR)
 app.include_router(projects.router, prefix=settings.API_V1_STR)
 app.include_router(search.router, prefix=settings.API_V1_STR)
 app.include_router(sync.router, prefix=settings.API_V1_STR)
+app.include_router(schedules.router, prefix=settings.API_V1_STR)

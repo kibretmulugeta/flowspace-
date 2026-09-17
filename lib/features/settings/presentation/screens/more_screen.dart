@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -171,7 +171,7 @@ class MoreScreen extends ConsumerWidget {
             context,
             icon: Icons.info_outline,
             title: 'About FlowSpace',
-            subtitle: 'Version ${AppConstants.appVersion} • Cross-platform Flutter',
+            subtitle: 'Version ${AppConstants.appVersion} â€¢ Cross-platform Flutter',
             color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
             onTap: () => _showAboutDialog(context),
             isDark: isDark,

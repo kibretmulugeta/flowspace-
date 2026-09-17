@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../features/auth/presentation/screens/first_run_category_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -10,6 +10,7 @@ import '../../features/notes/presentation/screens/notes_list_screen.dart';
 import '../../features/categories/presentation/screens/categories_screen.dart';
 import '../../features/projects/presentation/screens/projects_screen.dart';
 import '../../features/reminders/presentation/screens/reminders_screen.dart';
+import '../../features/schedules/presentation/schedules_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
 import '../../features/settings/presentation/screens/analytics_screen.dart';
 import '../../features/settings/presentation/screens/appearance_screen.dart';
@@ -89,6 +90,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SearchScreen());
       case '/reminders':
         return MaterialPageRoute(builder: (_) => const RemindersScreen());
+      case '/schedules':
+        return MaterialPageRoute(builder: (_) => const SchedulesScreen());
       case '/projects':
         return MaterialPageRoute(builder: (_) => const ProjectsScreen());
       case '/categories':

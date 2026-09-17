@@ -1,4 +1,4 @@
-/// Named route paths for FlowSpace navigation
+﻿/// Named route paths for FlowSpace navigation
 class AppRoutes {
   // Shell tabs
   static const String home = '/';
@@ -20,6 +20,7 @@ class AppRoutes {
   static const String projectDetail = '/projects/:id';
   static const String search = '/search';
   static const String reminders = '/reminders';
+  static const String schedules = '/schedules';
   static const String projects = '/projects';
   static const String categories = '/categories';
   static const String settings = '/settings';

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/calendar/domain/calendar_event_model.dart';
 import '../../features/calendar/domain/calendar_model.dart';
@@ -8,6 +8,7 @@ import '../../features/notes/domain/note_page_model.dart';
 import '../../features/projects/domain/project_model.dart';
 import '../../features/reminders/domain/reminder_model.dart';
 import '../../features/tasks/domain/task_model.dart';
+import '../../features/schedules/domain/schedule_model.dart';
 import '../constants/sample_data.dart';
 
 /// Production-grade Persistent Database Service for FlowSpace
@@ -29,6 +30,7 @@ class LocalDatabaseService {
   static const String _keyCalendars = 'flowspace_db_calendars_v1';
   static const String _keyEvents = 'flowspace_db_events_v1';
   static const String _keyReminders = 'flowspace_db_reminders_v1';
+  static const String _keySchedules = 'flowspace_db_schedules_v1';
   static const String _keySeeded = 'flowspace_db_seeded_v1';
 
   Future<void> initialize() async {
@@ -51,6 +53,7 @@ class LocalDatabaseService {
     await saveCalendars(SampleData.calendars);
     await saveEvents(SampleData.calendarEvents);
     await saveReminders(SampleData.reminders);
+    await saveSchedules(_defaultSampleSchedules());
     await _prefs?.setBool(_keySeeded, true);
   }
 
@@ -188,6 +191,75 @@ class LocalDatabaseService {
   Future<void> saveReminders(List<Reminder> reminders) async {
     final list = reminders.map((e) => e.toJson()).toList();
     await _prefs?.setString(_keyReminders, jsonEncode(list));
+  }
+
+  // --- SCHEDULES ---
+  Future<List<ScheduleModel>> loadSchedules() async {
+    final raw = _prefs?.getString(_keySchedules);
+    if (raw == null || raw.isEmpty) return _defaultSampleSchedules();
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => ScheduleModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    } catch (_) {
+      return _defaultSampleSchedules();
+    }
+  }
+
+  Future<void> saveSchedules(List<ScheduleModel> schedules) async {
+    final list = schedules.map((e) => e.toJson()).toList();
+    await _prefs?.setString(_keySchedules, jsonEncode(list));
+  }
+
+  static List<ScheduleModel> _defaultSampleSchedules() {
+    final now = DateTime.now();
+    return [
+      ScheduleModel(
+        id: 'sched-1',
+        userId: 'default_user',
+        title: 'Review System Architecture PR',
+        description: 'Relative delay offset of +2 hours after code review notification.',
+        mode: ScheduleMode.delay,
+        delayOffset: '2 hours',
+        status: ScheduleStatus.active,
+        nextRunAt: now.add(const Duration(hours: 2)),
+        createdAt: now,
+      ),
+      ScheduleModel(
+        id: 'sched-2',
+        userId: 'default_user',
+        title: 'Design Sprint Time Window',
+        description: 'Bounded execution window for focus sprint.',
+        mode: ScheduleMode.bounded,
+        windowStart: now.add(const Duration(hours: 1)),
+        windowEnd: now.add(const Duration(hours: 5)),
+        status: ScheduleStatus.active,
+        nextRunAt: now.add(const Duration(hours: 1)),
+        createdAt: now,
+      ),
+      ScheduleModel(
+        id: 'sched-3',
+        userId: 'default_user',
+        title: 'Daily Morning Standup & Planning',
+        description: 'Recurring schedule based on RFC 5545 daily repeat rule.',
+        mode: ScheduleMode.recurrent,
+        rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+        status: ScheduleStatus.active,
+        nextRunAt: DateTime(now.year, now.month, now.day, 9, 0).isAfter(now)
+            ? DateTime(now.year, now.month, now.day, 9, 0)
+            : DateTime(now.year, now.month, now.day + 1, 9, 0),
+        createdAt: now,
+      ),
+      ScheduleModel(
+        id: 'sched-4',
+        userId: 'default_user',
+        title: 'Deploy to Production Release',
+        description: 'Prerequisite dependent: Blocked until Architecture PR review is completed.',
+        mode: ScheduleMode.dependent,
+        prerequisiteId: 'sched-1',
+        status: ScheduleStatus.blocked,
+        createdAt: now,
+      ),
+    ];
   }
 
   // --- BACKUP & RESTORE UTILITIES ---
